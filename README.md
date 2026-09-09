@@ -9,9 +9,9 @@ Customer churn (customers leaving a service) directly impacts revenue for subscr
 ## Status: In Progress
 
 - [x] Step 1: Data cleaning
-- [ ] Step 2: EDA & feature analysis
-- [ ] Step 3: Model training & validation
-- [ ] Step 4: Prediction API (Django REST Framework)
+- [x] Step 2: EDA & feature analysis
+- [x] Step 3: Model training & validation
+- [x] Step 4: Prediction API (Django REST Framework)
 - [ ] Step 5: Frontend (React)
 - [ ] Step 6: Deployment (AWS)
 - [ ] Step 7: Monitoring dashboard (Power BI)
@@ -27,32 +27,73 @@ Customer churn (customers leaving a service) directly impacts revenue for subscr
 |---|---|
 | Data & Modeling | Python, Pandas, scikit-learn |
 | API | Django REST Framework |
-| Database | MongoDB (prediction logging) |
+| Database | MongoDB (prediction logging — coming in a later step) |
 | Frontend | React |
 | Deployment | AWS |
 | Reporting | Power BI |
 
-## Step 1: Data Cleaning
+## Steps 1–3: Data Cleaning, EDA, and Model Training
+
+All of the data work lives in a single notebook: **`churn_project.ipynb`**.
 
 Run:
 ```
-   pip install -r requirements.txt jupyter matplotlib
-   Open churn_project.ipynb in VS Code (with the Jupyter extension) and run all cells.
+pip install -r requirements.txt
+```
+Then open `churn_project.ipynb` in VS Code (with the Jupyter extension installed) and run all cells.
+
+**Step 1 — Key finding:** `TotalCharges` is stored as text, and 11 rows contain a blank value instead of a number. Every one of these rows has `tenure == 0` — these are brand-new customers who haven't completed a full billing cycle yet, not random missing data. These were set to `0.0` rather than dropped or imputed with a mean, since a mean would misrepresent a genuinely new customer. Categorical labels were also standardized (e.g. collapsed `"No internet service"` into `"No"`) to keep the feature space smaller and more interpretable.
+
+**Step 2 — Key findings:**
+- Month-to-month customers churn at **42.7%** vs just **2.8%** for two-year contracts — roughly a 15x difference, and likely the strongest single predictor in the dataset.
+- Churn risk is highest in a customer's first 6 months (**52.9%**) and drops steadily with tenure (**9.5%** past 4 years) — a classic "new customer risk window."
+- Counterintuitive finding: customers who churn pay *more* per month on average (**$74.44**) than customers who stay (**$61.27**), suggesting price sensitivity or perceived value plays a role independent of tenure and contract type.
+
+**Step 3 — Model training:** Compared Logistic Regression (with scaled numeric features) against Random Forest, using a stratified 80/20 split to preserve class balance and prioritizing recall on the churn class and ROC-AUC over raw accuracy, given the 73.5%/26.5% class imbalance. Numeric features were scaled with `StandardScaler`, fit only on the training set to avoid leaking test-set information. Top predictive features (from Random Forest importances): `TotalCharges`, `MonthlyCharges`, and `tenure`, followed by contract type — consistent with the Step 2 findings.
+
+Output: `telco_cleaned.csv`, plus saved model artifacts `churn_model.joblib`, `scaler.joblib`, and `model_columns.joblib` used by the API in Step 4.
+
+## Step 4: Prediction API (Django REST Framework)
+
+A REST API serves live predictions from the trained model.
+
+Run:
+```
+python manage.py migrate
+python manage.py runserver
 ```
 
-**Key finding:** `TotalCharges` is stored as text, and 11 rows contain a blank value instead of a number. Every one of these rows has `tenure == 0` — these are brand-new customers who haven't completed a full billing cycle yet, not random missing data. These were set to `0.0` rather than dropped or imputed with a mean, since a mean would misrepresent a genuinely new customer.
+Test the endpoint:
+```
+POST http://127.0.0.1:8000/api/predict/
+Content-Type: application/json
 
-Also standardized categorical labels (e.g. collapsed `"No internet service"` into `"No"` across related columns) to keep the feature space smaller and more interpretable for modeling.
+{
+    "tenure": 2,
+    "MonthlyCharges": 95.5,
+    "TotalCharges": 191.0,
+    "SeniorCitizen": 0,
+    "Contract": "Month-to-month",
+    "InternetService": "Fiber optic",
+    "PaymentMethod": "Electronic check",
+    "Partner": "No",
+    "Dependents": "No"
+}
+```
 
-**Class balance:** 73.5% did not churn, 26.5% churned. This imbalance will shape the validation strategy in Step 3 — stratified splits and precision/recall/F1 will matter more than raw accuracy.
+Example response:
+```json
+{"churn_prediction": "Yes", "churn_probability": 0.714}
+```
 
-Output: `telco_cleaned.csv` (7,043 rows, 24 columns — includes two engineered features: `tenure_bucket` and `avg_monthly_spend`).
+The view loads the model, scaler, and expected column structure once at server startup (not per-request), rebuilds the input into the same one-hot-encoded shape the model was trained on, applies the same fitted scaler to numeric fields, and returns both the predicted class and the churn probability.
 
 ## What's Next
 
-Step 2 will explore churn rate by contract type, tenure, and monthly charges, and finalize feature engineering ahead of model training.
+Step 5 will build a React frontend so predictions can be made through a form instead of raw API calls, removing the need to test with curl/PowerShell.
 
 ## Limitations (updated as project progresses)
 
 - Dataset represents a single snapshot in time per customer; it doesn't capture how customer behavior changes month to month.
-- This section will be expanded with modeling and deployment limitations as later steps are completed.
+- The model was trained with a specific scikit-learn version; loading it with a different installed version can raise compatibility warnings and should be monitored.
+- This section will be expanded with deployment and monitoring limitations as later steps are completed.
