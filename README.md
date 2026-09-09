@@ -36,8 +36,8 @@ Customer churn (customers leaving a service) directly impacts revenue for subscr
 
 Run:
 ```
-pip install -r requirements.txt
-python 01_clean_data.py
+   pip install -r requirements.txt jupyter matplotlib
+   Open churn_project.ipynb in VS Code (with the Jupyter extension) and run all cells.
 ```
 
 **Key finding:** `TotalCharges` is stored as text, and 11 rows contain a blank value instead of a number. Every one of these rows has `tenure == 0` — these are brand-new customers who haven't completed a full billing cycle yet, not random missing data. These were set to `0.0` rather than dropped or imputed with a mean, since a mean would misrepresent a genuinely new customer.
