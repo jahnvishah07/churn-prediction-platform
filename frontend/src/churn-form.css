@@ -1,0 +1,213 @@
+/* Design tokens */
+:root {
+  --bg: #F2F4F3;
+  --surface: #FFFFFF;
+  --ink: #1B2430;
+  --ink-soft: #5B6472;
+  --border: #DDE2E1;
+  --accent: #2E6F6B;
+  --accent-soft: #E4EEED;
+  --risk-high: #B4483A;
+  --risk-high-soft: #F7E7E4;
+  --risk-med: #B8842E;
+  --risk-med-soft: #F6EEDF;
+  --risk-low: #2E6F6B;
+  --risk-low-soft: #E4EEED;
+}
+
+* { box-sizing: border-box; }
+
+.churn-app {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "IBM Plex Sans", -apple-system, sans-serif;
+  padding: 56px 24px;
+}
+
+.churn-header {
+  max-width: 640px;
+  margin: 0 auto 40px;
+}
+
+.churn-tag {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.churn-header h1 {
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.churn-header p {
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 46ch;
+}
+
+.churn-layout {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .churn-layout { grid-template-columns: 1fr; }
+}
+
+.churn-form {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.field-row label {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  color: var(--ink-soft);
+  gap: 6px;
+}
+
+.field-row input,
+.field-row select {
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.field-row input:focus,
+.field-row select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.churn-form button {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--ink);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.churn-form button:hover:not(:disabled) { background: #2c3646; }
+.churn-form button:disabled { opacity: 0.6; cursor: default; }
+
+.churn-error {
+  color: var(--risk-high);
+  font-size: 14px;
+  margin: 12px 0 0;
+}
+
+/* Readout panel */
+.churn-readout {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  transition: background 0.2s ease;
+}
+
+.readout-empty p {
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.readout-label {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+
+.readout-figure {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 48px;
+  font-weight: 600;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.readout-verdict {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.readout-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.readout-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--ink-soft);
+  transition: width 0.4s ease;
+}
+
+.readout-note {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.churn-readout.is-high { background: var(--risk-high-soft); }
+.churn-readout.is-high .readout-figure,
+.churn-readout.is-high .readout-verdict { color: var(--risk-high); }
+.churn-readout.is-high .readout-bar-fill { background: var(--risk-high); }
+
+.churn-readout.is-medium { background: var(--risk-med-soft); }
+.churn-readout.is-medium .readout-figure,
+.churn-readout.is-medium .readout-verdict { color: var(--risk-med); }
+.churn-readout.is-medium .readout-bar-fill { background: var(--risk-med); }
+
+.churn-readout.is-low { background: var(--risk-low-soft); }
+.churn-readout.is-low .readout-figure,
+.churn-readout.is-low .readout-verdict { color: var(--risk-low); }
+.churn-readout.is-low .readout-bar-fill { background: var(--risk-low); }
