@@ -1,1 +1,5 @@
-Pandas
+pandas
+django
+djangorestframework
+joblib
+scikit-learn
