@@ -1,5 +1,8 @@
 pandas
 django
 djangorestframework
+django-cors-headers
 joblib
 scikit-learn
+gunicorn
+whitenoise
