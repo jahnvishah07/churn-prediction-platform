@@ -12,7 +12,7 @@ Customer churn (customers leaving a service) directly impacts revenue for subscr
 - [x] Step 2: EDA & feature analysis
 - [x] Step 3: Model training & validation
 - [x] Step 4: Prediction API (Django REST Framework)
-- [ ] Step 5: Frontend (React)
+- [x] Step 5: Frontend (React)
 - [ ] Step 6: Deployment (AWS)
 - [ ] Step 7: Monitoring dashboard (Power BI)
 - [ ] Step 8: Final documentation & write-up
@@ -28,7 +28,7 @@ Customer churn (customers leaving a service) directly impacts revenue for subscr
 | Data & Modeling | Python, Pandas, scikit-learn |
 | API | Django REST Framework |
 | Database | MongoDB (prediction logging — coming in a later step) |
-| Frontend | React |
+| Frontend | React (Vite) |
 | Deployment | AWS |
 | Reporting | Power BI |
 
@@ -86,14 +86,31 @@ Example response:
 {"churn_prediction": "Yes", "churn_probability": 0.714}
 ```
 
-The view loads the model, scaler, and expected column structure once at server startup (not per-request), rebuilds the input into the same one-hot-encoded shape the model was trained on, applies the same fitted scaler to numeric fields, and returns both the predicted class and the churn probability.
+The view loads the model, scaler, and expected column structure once at server startup (not per-request), rebuilds the input into the same one-hot-encoded shape the model was trained on, applies the same fitted scaler to numeric fields, and returns both the predicted class and the churn probability. `django-cors-headers` is configured to allow requests from the React dev server (`localhost:5173`).
+
+## Step 5: Frontend (React)
+
+A form-based UI replaces manual API calls, built with React (Vite) and calling the Django API directly.
+
+Run:
+```
+cd frontend
+npm install
+npm run dev
+```
+Open the printed local address (typically `http://localhost:5173/`). The Django server (Step 4) must also be running at the same time, since the form calls it directly.
+
+**Design approach:** a two-panel layout separates data entry (left) from the result (right) — a live "risk readout" panel that changes color based on the predicted probability (muted red for high risk, amber for medium, teal for low), rather than a flat yes/no answer. The intent is to make the output legible to a non-technical user (e.g. a support rep deciding whether to intervene), not just display a raw number. Typography pairs a serif display font (Fraunces) for the headline with a clean sans-serif (IBM Plex Sans) for the form and a monospace figure (IBM Plex Mono) for the probability readout, so it reads like a real data product rather than a default form.
+
+**Debugging note worth keeping:** initial integration failed with a CORS error in the browser console (`No 'Access-Control-Allow-Origin' header is present`). Diagnosed using browser DevTools → Console, which traced it to `CORS_ALLOWED_ORIGINS` in Django only listing port 3000 (the older Create React App default) while Vite actually serves on port 5173 — a straightforward but easy-to-miss mismatch when switching tooling.
 
 ## What's Next
 
-Step 5 will build a React frontend so predictions can be made through a form instead of raw API calls, removing the need to test with curl/PowerShell.
+Step 6 will deploy the full stack to AWS so the app is reachable outside localhost.
 
 ## Limitations (updated as project progresses)
 
 - Dataset represents a single snapshot in time per customer; it doesn't capture how customer behavior changes month to month.
 - The model was trained with a specific scikit-learn version; loading it with a different installed version can raise compatibility warnings and should be monitored.
+- CORS is currently configured for local development origins only; this will need updating once the frontend is deployed to a real domain in Step 6.
 - This section will be expanded with deployment and monitoring limitations as later steps are completed.
