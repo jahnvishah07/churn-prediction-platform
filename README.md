@@ -1,6 +1,6 @@
 # Churn Prediction Platform
 
-A full-stack machine learning application that predicts telecom customer churn — from raw, messy data to a live, deployed web app.
+A full-stack machine learning application that predicts telecom customer churn — from raw, messy data to a live, deployed web app with production monitoring.
 
 **🔗 Live Demo:** [churn-frontend-1nb4.onrender.com](https://churn-frontend-1nb4.onrender.com)
 **🔗 Live API:** [churn-api-4wgc.onrender.com/api/predict/](https://churn-api-4wgc.onrender.com/api/predict/)
@@ -19,10 +19,11 @@ Customer churn — when a customer leaves a subscription-based service — direc
 4. Serves live predictions through a REST API
 5. Presents them through an interactive web app
 6. Runs entirely on free, publicly deployed infrastructure
+7. Logs every prediction for downstream monitoring
 
 This isn't a single notebook — it's an end-to-end product, built and debugged step by step.
 
-## Status: Complete (Core Pipeline)
+## Status: Core Pipeline + Logging Complete
 
 - [x] Step 1: Data cleaning
 - [x] Step 2: EDA & feature analysis
@@ -30,8 +31,8 @@ This isn't a single notebook — it's an end-to-end product, built and debugged 
 - [x] Step 4: Prediction API (Django REST Framework)
 - [x] Step 5: Frontend (React)
 - [x] Step 6: Deployment (Render)
+- [x] Step 8: Prediction logging (MongoDB)
 - [ ] Step 7: Monitoring dashboard (Power BI)
-- [ ] Step 8: Prediction logging (MongoDB)
 
 ## Tech Stack
 
@@ -39,6 +40,7 @@ This isn't a single notebook — it's an end-to-end product, built and debugged 
 |---|---|
 | Data & Modeling | Python, Pandas, scikit-learn |
 | API | Django REST Framework, Gunicorn, WhiteNoise |
+| Logging & Monitoring | MongoDB Atlas, PyMongo |
 | Frontend | React (Vite) |
 | Deployment | Render (Web Service + Static Site) |
 | Version Control | Git, GitHub |
@@ -53,8 +55,19 @@ This isn't a single notebook — it's an end-to-end product, built and debugged 
 └─────────────────┘                              │  ┌─────────────────┐  │
                                                     │  │ scikit-learn    │  │
                                                     │  │ model + scaler  │  │
+                                                    │  └────────┬────────┘  │
+                                                    │           │            │
+                                                    │           ▼            │
+                                                    │  ┌─────────────────┐  │
+                                                    │  │ Log to MongoDB  │  │
                                                     │  └─────────────────┘  │
                                                     └──────────────────────┘
+                                                                │
+                                                                ▼
+                                                     ┌─────────────────────┐
+                                                     │   MongoDB Atlas      │
+                                                     │  (predictions log)   │
+                                                     └─────────────────────┘
 ```
 
 ## Dataset
@@ -162,23 +175,52 @@ Both issues were diagnosed the same way — reading the exact browser error rath
 
 ---
 
+## Step 8: Prediction Logging (MongoDB)
+
+Every prediction request is logged to MongoDB Atlas for later monitoring and dashboarding.
+
+**What gets logged, per request:**
+```json
+{
+  "input": { "tenure": 2, "MonthlyCharges": 95.5, "...": "..." },
+  "churn_prediction": "Yes",
+  "churn_probability": 0.714,
+  "timestamp": "2026-09-12T03:43:11.893Z"
+}
+```
+
+**Design decisions:**
+- The MongoDB client connects once at server startup (same pattern as the ML model), not per-request, to avoid reconnect overhead.
+- The connection string is read from a `MONGO_URI` environment variable — never hardcoded — configured separately for local development and the live Render deployment.
+- Logging failures are caught and swallowed rather than raised: if MongoDB is briefly unreachable, the prediction endpoint still returns a result to the user. Monitoring should never be able to break the core feature it's monitoring.
+
+**Local setup:**
+```bash
+pip install pymongo
+# set MONGO_URI as an environment variable before running the server
+python manage.py runserver
+```
+
+**Debugging note worth keeping:** the connection string only works when passed to a MongoDB client inside code (or `mongosh`) — typing it directly into a terminal fails immediately, since the shell tries to interpret it as a command rather than a value. A small but easy mistake to make when copy-pasting connection strings.
+
+---
+
 ## What's Next
 
-- **Step 7:** Power BI dashboard tracking prediction volume and model confidence over time.
-- **Step 8:** Log every prediction request to MongoDB to enable the Step 7 dashboard and monitor for model drift.
+- **Step 7:** Power BI dashboard tracking prediction volume, churn rate over time, and model confidence distribution, reading from the MongoDB prediction logs.
 
 ## Limitations
 
 - Dataset represents a single snapshot in time per customer; it doesn't capture how behavior changes month to month.
 - The model was trained with a specific scikit-learn version; loading it with a different installed version raises compatibility warnings (visible in Render logs) and should be monitored if retrained.
 - The backend is on Render's free tier, which spins down after inactivity — the first request after idle time will be slow (~30-50s) while the instance restarts. A paid tier or scheduled keep-alive ping would remove this in a production setting.
-- No authentication on the API — acceptable for a portfolio demo, not for production use with real customer data.
+- No authentication on the API or the logging endpoint — acceptable for a portfolio demo, not for production use with real customer data.
 
 ---
 
 ## Closing Note
 
-This project is a work in progress by design — Steps 1 through 6 (data cleaning through live deployment) are complete and functional today; Steps 7 and 8 are planned extensions rather than gaps. Each step so far was built, tested, and debugged individually, including two separate CORS issues traced through browser DevTools rather than guessed at — the kind of real-world friction a tutorial rarely shows.
+This project is a work in progress by design — Steps 1 through 6 and Step 8 (data cleaning through live deployment and prediction logging) are complete and functional today; Step 7 is a planned extension rather than a gap. Each step so far was built, tested, and debugged individually, including two separate CORS issues and an environment-variable naming mismatch traced through actual error messages rather than guessed at — the kind of real-world friction a tutorial rarely shows.
 
 ## Author
 
